@@ -27,7 +27,6 @@ const Chat = () => {
   const [showReport, setShowReport] = useState(false);
   const [toast, setToast] = useState(null);
   const [onlineCount, setOnlineCount] = useState(11334);
-  const [partnerCountry, setPartnerCountry] = useState('Italy');
 
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -62,12 +61,12 @@ const Chat = () => {
       setTimeout(() => setTyping(false), 1500);
     };
     const onMessageBlocked = ({ reason }) => {
-      setToast(reason === 'rate_limit' ? 'Too many messages. Wait.' : 'Message blocked by filter.');
+      setToast(reason === 'rate_limit' ? 'Troppi messaggi. Attendi.' : 'Messaggio bloccato dal filtro.');
       setTimeout(() => setToast(null), 3000);
     };
     const onTimeout = () => { closePeerConnection(); setAppState('timeout'); };
     const onBanned = () => { closePeerConnection(); setAppState('banned'); };
-    const onReportSent = () => { setToast('Report sent.'); setTimeout(() => setToast(null), 3000); };
+    const onReportSent = () => { setToast('Segnalazione inviata.'); setTimeout(() => setToast(null), 3000); };
     const onOnlineCount = (count) => setOnlineCount(count);
 
     const onOffer = async ({ offer }) => {
@@ -139,7 +138,7 @@ const Chat = () => {
       setLocalStream(stream);
       localStreamRef.current = stream;
     } catch (err) {
-      console.warn('Camera not available:', err);
+      console.warn('Camera non disponibile:', err);
       setCamDenied(true);
     }
   }
@@ -244,7 +243,10 @@ const Chat = () => {
     if (roomId) socket.emit('report_user', { roomId, reason });
   }
 
-  // === LANDING (tema chiaro come umingle) ===
+  const StatusDot = ({ color }) => <span className={`inline-block w-2 h-2 rounded-full animate-pulse ${color}`} />;
+  const isConnected = appState === 'matched';
+
+  // === LANDING ===
   if (appState === 'landing') {
     return (
       <div className="h-screen flex flex-col bg-white">
@@ -253,7 +255,7 @@ const Chat = () => {
             <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
               <MessageCircle size={18} className="text-white" />
             </div>
-            <span className="font-bold text-xl text-gray-800 tracking-tight">umingle</span>
+            <span className="font-bold text-xl text-gray-800 tracking-tight">RandomChat</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-10 h-5 bg-gray-300 rounded-full relative">
@@ -268,10 +270,10 @@ const Chat = () => {
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#a855f7] flex items-center justify-center mx-auto mb-6">
               <MessageCircle size={36} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Video Chat</h2>
-            <p className="text-gray-500 text-sm mb-6">Meet new people from around the world</p>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">RandomChat</h2>
+            <p className="text-gray-500 text-sm mb-6">Chat video anonima con persone da tutto il mondo</p>
             <button onClick={handleStart} className="w-full py-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition text-lg">
-              Start Chatting
+              Inizia a Chattare
             </button>
           </div>
         </div>
@@ -288,7 +290,7 @@ const Chat = () => {
             <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
               <MessageCircle size={18} className="text-white" />
             </div>
-            <span className="font-bold text-xl text-gray-800">umingle</span>
+            <span className="font-bold text-xl text-gray-800">RandomChat</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-10 h-5 bg-[#7c3aed] rounded-full relative">
@@ -300,15 +302,13 @@ const Chat = () => {
         </header>
         <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
           <div className="w-16 h-16 border-4 border-[#7c3aed] border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-600 font-medium">Looking for a partner...</p>
+          <p className="text-gray-600 font-medium">Cerchiamo qualcuno...</p>
         </div>
       </div>
     );
   }
 
-  // === DISCONNECTED / MATCHED (come in foto) ===
-  const isConnected = appState === 'matched';
-
+  // === CHAT (matched o disconnected) ===
   return (
     <div className="h-screen flex flex-col bg-white">
       {/* Header bianco */}
@@ -317,7 +317,7 @@ const Chat = () => {
           <div className="w-7 h-7 rounded-md bg-[#7c3aed] flex items-center justify-center">
             <MessageCircle size={16} className="text-white" />
           </div>
-          <span className="font-bold text-lg text-gray-800">umingle</span>
+          <span className="font-bold text-lg text-gray-800">RandomChat</span>
         </div>
         <div className="flex items-center gap-2">
           <div className={`w-9 h-5 rounded-full relative transition ${isConnected ? 'bg-[#7c3aed]' : 'bg-gray-300'}`}>
@@ -332,9 +332,9 @@ const Chat = () => {
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Left: video area */}
         <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
-          {/* Video grid orizzontale */}
+          {/* Video grid orizzontale (come in foto) */}
           <div className="flex-1 flex gap-2 p-2 min-h-0">
-            {/* Partner video (left) */}
+            {/* Partner video (sinistra) */}
             <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
               {remoteStream ? (
                 <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
@@ -343,18 +343,18 @@ const Chat = () => {
                   <Video size={32} className="text-gray-400" />
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 text-xs text-white/60 font-medium">umingle.com</div>
+              <div className="absolute bottom-2 left-2 text-xs text-white/60 font-medium">randomchat.com</div>
               <div className="absolute bottom-2 right-2 w-6 h-6 bg-white/20 rounded flex items-center justify-center text-[10px] text-white font-bold">P</div>
             </div>
 
-            {/* Local video (right) */}
+            {/* Local video (destra) */}
             <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
               {localStream && !camDenied ? (
                 <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center bg-[#d1d5db]">
                   <VideoOff size={28} className="text-gray-400 mb-1" />
-                  <span className="text-xs text-gray-500">Camera off</span>
+                  <span className="text-xs text-gray-500">{camDenied ? 'Camera off' : 'Camera'}</span>
                 </div>
               )}
             </div>
@@ -394,7 +394,7 @@ const Chat = () => {
         </div>
 
         {/* Right: chat sidebar */}
-        <div className="w-full lg:w-64 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-gray-200 shrink-0 h-40 lg:h-auto">
+        <div className="w-full lg:w-56 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-gray-200 shrink-0 h-40 lg:h-auto">
           <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin min-h-0">
             {messages.length === 0 && (
               <div className="text-center text-gray-400 py-4 text-xs">Say hi!</div>
