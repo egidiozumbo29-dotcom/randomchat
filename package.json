@@ -1,0 +1,16 @@
+{
+  "name": "randomchat",
+  "version": "1.0.0",
+  "description": "RandomChat - Omegle-like chat app with moderation",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\"",
+    "start": "concurrently \"cd backend && npm start\" \"cd frontend && npm run preview\"",
+    "build": "cd frontend && npm run build",
+    "online": "cd frontend && npm run build && cd ../backend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "localtunnel": "^2.0.2"
+  }
+}

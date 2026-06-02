@@ -1,0 +1,17 @@
+# Dependencies
+backend/node_modules/
+frontend/node_modules/
+
+# Database (Render usa filesystem temporaneo, dati si resettano)
+backend/data/*.db
+
+# Environment
+backend/.env
+frontend/.env
+
+# Build
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
