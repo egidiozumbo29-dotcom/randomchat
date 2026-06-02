@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, SkipForward, AlertTriangle, MessageCircle,
-  Mic, MicOff, Video, VideoOff, Power
+  Mic, MicOff, Video, VideoOff, Moon, Sun, Power
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import ReportModal from '../components/ReportModal';
@@ -19,6 +19,11 @@ const Chat = () => {
   const localStreamRef = useRef(null);
   const roomIdRef = useRef(null);
 
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('randomchat-theme');
+    return saved ? saved === 'dark' : false;
+  });
+
   const [appState, setAppState] = useState('landing');
   const [roomId, setRoomId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -33,6 +38,10 @@ const Chat = () => {
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [camDenied, setCamDenied] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('randomchat-theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
 
@@ -243,35 +252,48 @@ const Chat = () => {
     if (roomId) socket.emit('report_user', { roomId, reason });
   }
 
-  const StatusDot = ({ color }) => <span className={`inline-block w-2 h-2 rounded-full animate-pulse ${color}`} />;
   const isConnected = appState === 'matched';
+
+  // THEME classes
+  const bgMain = darkMode ? 'bg-[#0f0f1a]' : 'bg-white';
+  const bgHeader = darkMode ? 'bg-[#13131a] border-[#1f1f2e]' : 'bg-white border-gray-200';
+  const textMain = darkMode ? 'text-white' : 'text-gray-800';
+  const textSub = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const bgVideo = darkMode ? 'bg-[#1a1a2e] border-[#2a2a3e]' : 'bg-[#d1d5db] border-gray-200';
+  const bgChat = darkMode ? 'bg-[#1a1a2e] border-[#2a2a3e]' : 'bg-gray-50 border-gray-200';
+  const bgInput = darkMode ? 'bg-[#2a2a3e] border-[#3a3a4e] text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-700 placeholder-gray-400';
+  const bgMsgMe = darkMode ? 'bg-[#7c3aed]' : 'bg-[#7c3aed]';
+  const bgMsgOther = darkMode ? 'bg-[#2a2a3e] text-gray-200' : 'bg-white text-gray-700';
+  const bgSystem = darkMode ? 'bg-[#1a1a28] text-gray-500' : 'bg-gray-100 text-gray-500';
+  const bgControls = darkMode ? 'bg-[#1a1a2e] border-[#2a2a3e]' : 'bg-white border-gray-200';
+  const btnControl = darkMode ? 'bg-[#2a2a3e] text-white hover:bg-[#3a3a4e]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200';
 
   // === LANDING ===
   if (appState === 'landing') {
     return (
-      <div className="h-screen flex flex-col bg-white">
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
+      <div className={`h-screen flex flex-col ${bgMain} transition-colors`}>
+        <header className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${bgHeader} transition-colors`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
               <MessageCircle size={18} className="text-white" />
             </div>
-            <span className="font-bold text-xl text-gray-800 tracking-tight">RandomChat</span>
+            <span className={`font-bold text-xl tracking-tight ${textMain}`}>RandomChat</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-5 bg-gray-300 rounded-full relative">
-              <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow"></div>
-            </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`} title="Toggle dark mode">
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
             <span className="text-xs text-gray-500">online</span>
           </div>
         </header>
-        <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
-          <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-lg">
+        <div className={`flex-1 flex items-center justify-center p-6 ${darkMode ? 'bg-[#0a0a0f]' : 'bg-gray-50'} transition-colors`}>
+          <div className={`w-full max-w-md border rounded-2xl p-8 text-center shadow-lg transition-colors ${darkMode ? 'bg-[#13131a] border-[#1f1f2e]' : 'bg-white border-gray-200'}`}>
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#a855f7] flex items-center justify-center mx-auto mb-6">
               <MessageCircle size={36} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">RandomChat</h2>
-            <p className="text-gray-500 text-sm mb-6">Chat video anonima con persone da tutto il mondo</p>
+            <h2 className={`text-2xl font-bold mb-2 ${textMain}`}>RandomChat</h2>
+            <p className={`text-sm mb-6 ${textSub}`}>Chat video anonima con persone da tutto il mondo</p>
             <button onClick={handleStart} className="w-full py-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition text-lg">
               Inizia a Chattare
             </button>
@@ -284,42 +306,45 @@ const Chat = () => {
   // === WAITING ===
   if (appState === 'waiting') {
     return (
-      <div className="h-screen flex flex-col bg-white">
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
+      <div className={`h-screen flex flex-col ${bgMain} transition-colors`}>
+        <header className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${bgHeader} transition-colors`}>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
               <MessageCircle size={18} className="text-white" />
             </div>
-            <span className="font-bold text-xl text-gray-800">RandomChat</span>
+            <span className={`font-bold text-xl ${textMain}`}>RandomChat</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-5 bg-[#7c3aed] rounded-full relative">
-              <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 right-0.5 shadow"></div>
-            </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`}>
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
             <span className="text-xs text-gray-500">online</span>
           </div>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
+        <div className={`flex-1 flex flex-col items-center justify-center ${darkMode ? 'bg-[#0a0a0f]' : 'bg-gray-50'} transition-colors`}>
           <div className="w-16 h-16 border-4 border-[#7c3aed] border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-gray-600 font-medium">Cerchiamo qualcuno...</p>
+          <p className={`font-medium ${textSub}`}>Cerchiamo qualcuno...</p>
         </div>
       </div>
     );
   }
 
-  // === CHAT (matched o disconnected) ===
+  // === CHAT (video sopra, chat sotto) ===
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Header bianco */}
-      <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-3 shrink-0 z-20">
+    <div className={`h-screen flex flex-col ${bgMain} transition-colors`}>
+      {/* Header */}
+      <header className={`h-12 border-b flex items-center justify-between px-3 shrink-0 z-20 ${bgHeader} transition-colors`}>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-[#7c3aed] flex items-center justify-center">
             <MessageCircle size={16} className="text-white" />
           </div>
-          <span className="font-bold text-lg text-gray-800">RandomChat</span>
+          <span className={`font-bold text-lg ${textMain}`}>RandomChat</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`} title="Dark mode">
+            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <div className={`w-9 h-5 rounded-full relative transition ${isConnected ? 'bg-[#7c3aed]' : 'bg-gray-300'}`}>
             <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition ${isConnected ? 'right-0.5' : 'left-0.5'}`}></div>
           </div>
@@ -328,83 +353,55 @@ const Chat = () => {
         </div>
       </header>
 
-      {/* Main: video + chat */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Left: video area */}
-        <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
-          {/* Video grid orizzontale (come in foto) */}
-          <div className="flex-1 flex gap-2 p-2 min-h-0">
-            {/* Partner video (sinistra) */}
-            <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
-              {remoteStream ? (
-                <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#d1d5db]">
-                  <Video size={32} className="text-gray-400" />
-                </div>
-              )}
-              <div className="absolute bottom-2 left-2 text-xs text-white/60 font-medium">randomchat.com</div>
-              <div className="absolute bottom-2 right-2 w-6 h-6 bg-white/20 rounded flex items-center justify-center text-[10px] text-white font-bold">P</div>
-            </div>
-
-            {/* Local video (destra) */}
-            <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
-              {localStream && !camDenied ? (
-                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-[#d1d5db]">
-                  <VideoOff size={28} className="text-gray-400 mb-1" />
-                  <span className="text-xs text-gray-500">{camDenied ? 'Camera off' : 'Camera'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Info text sotto video */}
-          <div className="px-3 py-2 bg-white border-t border-gray-100">
-            <p className="text-xs text-gray-600">You're now chatting with someone new</p>
-            <p className="text-xs text-gray-500">You both like Italia, ita, it</p>
-            <p className="text-xs text-gray-700 font-medium">🇮🇹 Italy</p>
-            {!isConnected && <p className="text-xs text-gray-500 mt-1">You have disconnected</p>}
-          </div>
-
-          {/* Controls */}
-          <div className="h-14 bg-white border-t border-gray-200 flex items-center gap-2 px-3 shrink-0">
-            <button onClick={toggleMic} className={`p-2 rounded-full transition ${micOn ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-red-100 text-red-500'}`}>
-              {micOn ? <Mic size={18} /> : <MicOff size={18} />}
-            </button>
-            <button onClick={toggleCam} className={`p-2 rounded-full transition ${camOn ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-red-100 text-red-500'}`}>
-              {camOn ? <Video size={18} /> : <VideoOff size={18} />}
-            </button>
-            <button onClick={() => setShowReport(true)} className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition">
-              <AlertTriangle size={18} />
-            </button>
-            {isConnected ? (
-              <button onClick={handleNext} className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition">
-                <SkipForward size={16} />
-                Skip
-              </button>
+      {/* Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Video row (piccole) */}
+        <div className="flex gap-2 p-2 shrink-0 h-[35vh] min-h-[200px]">
+          {/* Partner video */}
+          <div className={`flex-1 relative rounded-xl overflow-hidden border ${bgVideo} transition-colors`}>
+            {remoteStream ? (
+              <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
             ) : (
-              <button onClick={handleStart} className="flex items-center gap-1.5 px-5 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg font-bold text-sm transition">
-                Start
-                <span className="text-[10px] font-normal opacity-70 ml-1">Esc</span>
-              </button>
+              <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'bg-[#1a1a2e]' : 'bg-[#d1d5db]'}`}>
+                <Video size={28} className="text-gray-400" />
+                <span className="text-xs text-gray-500 mt-1">Partner</span>
+              </div>
+            )}
+            <div className="absolute bottom-2 left-2 text-[10px] text-white/60 font-medium">randomchat.com</div>
+          </div>
+
+          {/* Local video */}
+          <div className={`flex-1 relative rounded-xl overflow-hidden border ${bgVideo} transition-colors`}>
+            {localStream && !camDenied ? (
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            ) : (
+              <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'bg-[#1a1a2e]' : 'bg-[#d1d5db]'}`}>
+                <VideoOff size={24} className="text-gray-400" />
+                <span className="text-xs text-gray-500 mt-1">{camDenied ? 'Camera off' : 'You'}</span>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right: chat sidebar */}
-        <div className="w-full lg:w-56 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-gray-200 shrink-0 h-40 lg:h-auto">
-          <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin min-h-0">
+        {/* Info bar */}
+        <div className={`px-3 py-1.5 text-xs border-b shrink-0 ${darkMode ? 'bg-[#13131a] border-[#1f1f2e] text-gray-400' : 'bg-white border-gray-100 text-gray-600'} transition-colors`}>
+          You're now chatting with someone new — 🇮🇹 Italy
+          {!isConnected && <span className="ml-2 text-gray-500">— You have disconnected</span>}
+        </div>
+
+        {/* Chat area (sotto) */}
+        <div className={`flex-1 flex flex-col min-h-0 border-t transition-colors ${bgChat}`}>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin min-h-0">
             {messages.length === 0 && (
-              <div className="text-center text-gray-400 py-4 text-xs">Say hi!</div>
+              <div className={`text-center py-6 text-xs ${textSub}`}>Say hi to your partner!</div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.system ? 'justify-center' : msg.isMe ? 'justify-end' : 'justify-start'}`}>
                 {msg.system ? (
-                  <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{msg.text}</span>
+                  <span className={`text-[10px] px-3 py-1 rounded-full ${bgSystem}`}>{msg.text}</span>
                 ) : (
-                  <div className={`max-w-[90%] px-2.5 py-1.5 rounded-lg text-xs ${msg.isMe ? 'bg-[#7c3aed] text-white' : 'bg-gray-100 text-gray-700'}`}>
+                  <div className={`max-w-[80%] sm:max-w-md px-3 py-2 rounded-2xl text-sm ${msg.isMe ? `${bgMsgMe} text-white rounded-br-md` : `${bgMsgOther} rounded-bl-md shadow-sm`}`}>
                     {msg.text}
                   </div>
                 )}
@@ -412,20 +409,43 @@ const Chat = () => {
             ))}
             {typing && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 flex items-center gap-1">
-                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" />
-                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className={`px-3 py-2 rounded-2xl rounded-bl-md text-sm flex items-center gap-1 ${darkMode ? 'bg-[#2a2a3e] text-gray-400' : 'bg-white text-gray-400'} shadow-sm`}>
+                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
+                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
-          <div className="p-2 border-t border-gray-200 shrink-0">
-            <div className="flex gap-1.5">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type..." className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#7c3aed] transition" />
-              <button onClick={handleSend} disabled={!input.trim()} className="p-2 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-lg transition">
-                <Send size={14} />
+
+          {/* Input + Controls */}
+          <div className={`border-t p-2 shrink-0 ${bgControls} transition-colors`}>
+            <div className="flex items-center gap-2 mb-2">
+              <button onClick={toggleMic} className={`p-2 rounded-full transition ${micOn ? btnControl : 'bg-red-500/10 text-red-400'}`}>
+                {micOn ? <Mic size={16} /> : <MicOff size={16} />}
+              </button>
+              <button onClick={toggleCam} className={`p-2 rounded-full transition ${camOn ? btnControl : 'bg-red-500/10 text-red-400'}`}>
+                {camOn ? <Video size={16} /> : <VideoOff size={16} />}
+              </button>
+              <button onClick={() => setShowReport(true)} className="p-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
+                <AlertTriangle size={16} />
+              </button>
+              {isConnected ? (
+                <button onClick={handleNext} className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition">
+                  <SkipForward size={16} />
+                  Skip
+                </button>
+              ) : (
+                <button onClick={handleStart} className="flex items-center gap-1.5 px-5 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg font-bold text-sm transition">
+                  Start
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type a message..." className={`flex-1 border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition ${bgInput}`} />
+              <button onClick={handleSend} disabled={!input.trim()} className="p-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-xl transition">
+                <Send size={18} />
               </button>
             </div>
           </div>
@@ -433,7 +453,7 @@ const Chat = () => {
       </div>
 
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg shadow-lg text-xs z-50">
+        <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg shadow-lg text-xs z-50 max-w-xs text-center ${darkMode ? 'bg-[#13131a] border border-[#1f1f2e] text-white' : 'bg-gray-800 text-white'}`}>
           {toast}
         </div>
       )}
