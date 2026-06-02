@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, SkipForward, AlertTriangle, MessageCircle,
-  Mic, MicOff, Video, VideoOff, Power
+  Mic, MicOff, Video, Power
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import ReportModal from '../components/ReportModal';
@@ -347,7 +347,7 @@ const Chat = () => {
       {/* Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Video row (piccole) */}
-        <div className="flex gap-2 p-2 shrink-0 h-[35vh] min-h-[200px]">
+        <div className="flex gap-2 p-2 shrink-0 h-[42vh] min-h-[260px]">
           {/* Partner video */}
           <div className={`flex-1 relative rounded-xl overflow-hidden border ${bgVideo} transition-colors`}>
             {remoteStream ? (
@@ -415,9 +415,6 @@ const Chat = () => {
             <div className="flex items-center gap-2 mb-2">
               <button onClick={toggleMic} className={`p-2 rounded-full transition ${micOn ? btnControl : 'bg-red-500/10 text-red-400'}`}>
                 {micOn ? <Mic size={16} /> : <MicOff size={16} />}
-              </button>
-              <button onClick={toggleCam} className={`p-2 rounded-full transition ${camOn ? btnControl : 'bg-red-500/10 text-red-400'}`}>
-                {camOn ? <Video size={16} /> : <VideoOff size={16} />}
               </button>
               <button onClick={() => setShowReport(true)} className="p-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
                 <AlertTriangle size={16} />
