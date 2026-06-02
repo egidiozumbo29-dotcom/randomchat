@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, SkipForward, AlertTriangle, MessageCircle,
-  Mic, MicOff, Video, Power
+  Mic, MicOff, Video, VideoOff, Power
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import ReportModal from '../components/ReportModal';
+
+const BACKEND_URL = 'https://lectures-ellis-coast-overall.trycloudflare.com';
 
 const Chat = () => {
   const navigate = useNavigate();
@@ -31,13 +33,29 @@ const Chat = () => {
   const [typing, setTyping] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [toast, setToast] = useState(null);
-  const [onlineCount, setOnlineCount] = useState(11334);
+  const [onlineCount, setOnlineCount] = useState(0);
 
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [camDenied, setCamDenied] = useState(false);
+
+  // Fetch real online count from backend
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/stats`, { method: 'GET', mode: 'cors', cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setOnlineCount(data.online || 0);
+        }
+      } catch (e) {}
+    }
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('randomchat-theme', darkMode ? 'dark' : 'light');
@@ -56,7 +74,7 @@ const Chat = () => {
       startPeerConnection(isInitiator, roomId);
     };
     const onPartnerLeft = () => {
-      setMessages(prev => [...prev, { system: true, text: "You have disconnected" }]);
+      setMessages(prev => [...prev, { system: true, text: "L'utente ha abbandonato la chat." }]);
       closePeerConnection();
       setRemoteStream(null);
       setAppState('disconnected');
@@ -214,17 +232,19 @@ const Chat = () => {
       if (t) { t.enabled = !t.enabled; setMicOn(t.enabled); }
     }
   }
-  function toggleCam() {
-    if (localStreamRef.current) {
-      const t = localStreamRef.current.getVideoTracks()[0];
-      if (t) { t.enabled = !t.enabled; setCamOn(t.enabled); }
-    }
-  }
 
   async function handleStart() {
     await requestCamera();
     setAppState('waiting');
     socket.emit('find_partner');
+  }
+
+  function handleStop() {
+    closePeerConnection();
+    setMessages([]);
+    setRoomId(null);
+    cleanupAll();
+    setAppState('landing');
   }
 
   function handleNext() {
@@ -292,7 +312,7 @@ const Chat = () => {
             <h2 className={`text-2xl font-bold mb-2 ${textMain}`}>RandomChat</h2>
             <p className={`text-sm mb-6 ${textSub}`}>Chat video anonima con persone da tutto il mondo</p>
             <button onClick={handleStart} className="w-full py-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition text-lg">
-              Inizia a Chattare
+              Avvia
             </button>
           </div>
         </div>
@@ -300,31 +320,7 @@ const Chat = () => {
     );
   }
 
-  // === WAITING ===
-  if (appState === 'waiting') {
-    return (
-      <div className={`h-screen flex flex-col ${bgMain} transition-colors`}>
-        <header className={`h-14 border-b flex items-center justify-between px-4 shrink-0 ${bgHeader} transition-colors`}>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
-              <MessageCircle size={18} className="text-white" />
-            </div>
-            <span className={`font-bold text-xl ${textMain}`}>RandomChat</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
-            <span className="text-xs text-gray-500">online</span>
-          </div>
-        </header>
-        <div className={`flex-1 flex flex-col items-center justify-center ${darkMode ? 'bg-[#0a0a0f]' : 'bg-gray-50'} transition-colors`}>
-          <div className="w-16 h-16 border-4 border-[#7c3aed] border-t-transparent rounded-full animate-spin mb-4" />
-          <p className={`font-medium ${textSub}`}>Cerchiamo qualcuno...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // === CHAT (video sopra, chat sotto) ===
+  // === CHAT (video sopra, chat sotto) — usato per waiting, matched, disconnected ===
   return (
     <div className={`h-screen flex flex-col ${bgMain} transition-colors`}>
       {/* Header */}
@@ -354,8 +350,17 @@ const Chat = () => {
               <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
             ) : (
               <div className={`w-full h-full flex flex-col items-center justify-center ${darkMode ? 'bg-[#1a1a2e]' : 'bg-[#d1d5db]'}`}>
-                <Video size={28} className="text-gray-400" />
-                <span className="text-xs text-gray-500 mt-1">Partner</span>
+                {appState === 'waiting' ? (
+                  <>
+                    <div className="w-12 h-12 border-4 border-[#7c3aed] border-t-transparent rounded-full animate-spin mb-2" />
+                    <span className="text-xs text-gray-500">Cerchiamo qualcuno...</span>
+                  </>
+                ) : (
+                  <>
+                    <Video size={28} className="text-gray-400" />
+                    <span className="text-xs text-gray-500 mt-1">Partner</span>
+                  </>
+                )}
               </div>
             )}
             <div className="absolute bottom-2 left-2 text-[10px] text-white/60 font-medium">randomchat.com</div>
@@ -376,16 +381,23 @@ const Chat = () => {
 
         {/* Info bar */}
         <div className={`px-3 py-1.5 text-xs border-b shrink-0 ${darkMode ? 'bg-[#13131a] border-[#1f1f2e] text-gray-400' : 'bg-white border-gray-100 text-gray-600'} transition-colors`}>
-          You're now chatting with someone new — 🇮🇹 Italy
-          {!isConnected && <span className="ml-2 text-gray-500">— You have disconnected</span>}
+          {appState === 'waiting' ? 'Cerchiamo un partner per te...' : (
+            <>
+              You're now chatting with someone new — 🇮🇹 Italy
+              {!isConnected && <span className="ml-2 text-gray-500">— You have disconnected</span>}
+            </>
+          )}
         </div>
 
         {/* Chat area (sotto) */}
         <div className={`flex-1 flex flex-col min-h-0 border-t transition-colors ${bgChat}`}>
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin min-h-0">
-            {messages.length === 0 && (
+            {messages.length === 0 && appState === 'matched' && (
               <div className={`text-center py-6 text-xs ${textSub}`}>Say hi to your partner!</div>
+            )}
+            {messages.length === 0 && appState !== 'matched' && (
+              <div className={`text-center py-6 text-xs ${textSub}`}>Aspetta che troviamo qualcuno...</div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.system ? 'justify-center' : msg.isMe ? 'justify-end' : 'justify-start'}`}>
@@ -419,20 +431,18 @@ const Chat = () => {
               <button onClick={() => setShowReport(true)} className="p-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
                 <AlertTriangle size={16} />
               </button>
-              {isConnected ? (
-                <button onClick={handleNext} className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition">
-                  <SkipForward size={16} />
-                  Skip
-                </button>
-              ) : (
-                <button onClick={handleStart} className="flex items-center gap-1.5 px-5 py-2 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg font-bold text-sm transition">
-                  Start
-                </button>
-              )}
+              <button onClick={handleStop} className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold text-sm transition">
+                <Power size={16} />
+                Stop
+              </button>
+              <button onClick={handleNext} className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition">
+                <SkipForward size={16} />
+                Skip
+              </button>
             </div>
             <div className="flex gap-2">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type a message..." className={`flex-1 border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition ${bgInput}`} />
-              <button onClick={handleSend} disabled={!input.trim()} className="p-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-xl transition">
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Scrivi un messaggio..." className={`flex-1 border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-[#7c3aed] transition ${bgInput}`} />
+              <button onClick={handleSend} disabled={!input.trim() || appState !== 'matched'} className="p-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-xl transition">
                 <Send size={18} />
               </button>
             </div>
