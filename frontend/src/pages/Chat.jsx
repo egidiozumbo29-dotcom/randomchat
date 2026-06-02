@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, SkipForward, AlertTriangle, MessageCircle,
-  Mic, MicOff, Video, VideoOff, Moon, Sun, Power
+  Mic, MicOff, Video, VideoOff, Power
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import ReportModal from '../components/ReportModal';
@@ -280,9 +280,6 @@ const Chat = () => {
             <span className={`font-bold text-xl tracking-tight ${textMain}`}>RandomChat</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`} title="Toggle dark mode">
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
             <span className="text-xs text-gray-500">online</span>
           </div>
@@ -315,9 +312,6 @@ const Chat = () => {
             <span className={`font-bold text-xl ${textMain}`}>RandomChat</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`}>
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
             <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
             <span className="text-xs text-gray-500">online</span>
           </div>
@@ -342,11 +336,8 @@ const Chat = () => {
           <span className={`font-bold text-lg ${textMain}`}>RandomChat</span>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setDarkMode(!darkMode)} className={`p-2 rounded-full transition ${btnControl}`} title="Dark mode">
-            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-          </button>
-          <div className={`w-9 h-5 rounded-full relative transition ${isConnected ? 'bg-[#7c3aed]' : 'bg-gray-300'}`}>
-            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition ${isConnected ? 'right-0.5' : 'left-0.5'}`}></div>
+          <div onClick={() => setDarkMode(!darkMode)} className={`w-9 h-5 rounded-full relative transition cursor-pointer ${darkMode ? 'bg-[#7c3aed]' : 'bg-gray-300'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition ${darkMode ? 'right-0.5' : 'left-0.5'}`}></div>
           </div>
           <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
           <span className="text-xs text-gray-500">online</span>
