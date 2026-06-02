@@ -101,17 +101,7 @@ function leaveCurrentRoom(sessionId, socket) {
       if (otherSocket) {
         otherSocket.leave(roomId);
         otherSocket.emit('partner_left');
-        // Auto requeue l'altro
-        const newPartner = findNewPartner(otherId);
-        if (newPartner) {
-          const newRoomId = createRoom(otherId, newPartner);
-          const sOther = sessionToSocket.get(otherId);
-          const sNew = sessionToSocket.get(newPartner);
-          if (sOther) io.to(sOther).emit('matched', { roomId: newRoomId });
-          if (sNew) io.to(sNew).emit('matched', { roomId: newRoomId });
-        } else {
-          otherSocket.emit('waiting');
-        }
+        // NON auto-requeue! Lascia che l'altro clicchi Next manualmente
       }
     }
   }
