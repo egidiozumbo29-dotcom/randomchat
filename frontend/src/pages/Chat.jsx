@@ -162,43 +162,48 @@ const Chat = () => {
     }
   }
 
-  // === PEER CONNECTION: crea/chiudi senza toccare la camera ===
+  // === PEER CONNECTION: crea/chiudi ===
   function createPeerConnection(currentRoomId) {
     if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
     const peer = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }]
     });
     peer.onicecandidate = (event) => {
-      if (event.candidate) socket.emit('webrtc-ice-candidate', { roomId: currentRoomId, candidate: event.candidate });
+      if (event.candidate && currentRoomId) {
+        try { socket.emit('webrtc-ice-candidate', { roomId: currentRoomId, candidate: event.candidate }); } catch (e) {}
+      }
     };
     peer.ontrack = (event) => {
-      if (event.streams && event.streams[0]) setRemoteStream(event.streams[0]);
+      if (event.streams && event.streams[0]) {
+        try { setRemoteStream(event.streams[0]); } catch (e) {}
+      }
     };
-    // Aggiunge i track locali
+    // Aggiunge i track locali (solo se presenti)
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        if (!peer.getSenders().find(s => s.track === track)) {
-          peer.addTrack(track, localStreamRef.current);
-        }
-      });
+      try {
+        localStreamRef.current.getTracks().forEach(track => {
+          try { peer.addTrack(track, localStreamRef.current); } catch (e) {}
+        });
+      } catch (e) {}
     }
     pcRef.current = peer;
     return peer;
   }
 
   async function startPeerConnection(initiator, currentRoomId) {
-    const peer = createPeerConnection(currentRoomId);
-    if (initiator) {
-      try {
+    try {
+      const peer = createPeerConnection(currentRoomId);
+      if (initiator) {
         const offer = await peer.createOffer();
         await peer.setLocalDescription(offer);
         socket.emit('webrtc-offer', { roomId: currentRoomId, offer });
-      } catch (e) { console.error(e); }
-    }
+      }
+    } catch (e) { console.error('startPeerConnection error:', e); }
   }
 
   function closePeerConnection() {
-    if (pcRef.current) { pcRef.current.close(); pcRef.current = null; }
+    try { if (pcRef.current) { pcRef.current.close(); } } catch (e) {}
+    pcRef.current = null;
     setRemoteStream(null);
   }
 
