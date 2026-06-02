@@ -9,8 +9,9 @@ export const SocketProvider = ({ children }) => {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // Se deployato sulla stessa origine del backend, usa l'URL corrente
-    const apiUrl = import.meta.env.VITE_API_URL || undefined;
+    // URL del backend (Render cloud)
+    const BACKEND_URL = 'https://randomchat-backend-0ph8.onrender.com';
+    const apiUrl = import.meta.env.VITE_API_URL || BACKEND_URL;
     const s = io(apiUrl);
     setSocket(s);
 
