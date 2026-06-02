@@ -233,9 +233,9 @@ const Chat = () => {
     }
   }
 
-  async function handleStart() {
-    await requestCamera();
+  function handleStart() {
     setAppState('waiting');
+    requestCamera();
     socket.emit('find_partner');
   }
 
