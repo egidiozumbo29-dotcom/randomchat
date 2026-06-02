@@ -2,11 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Send, SkipForward, AlertTriangle, MessageCircle,
-  Mic, MicOff, Video, VideoOff, Power, Camera,
-  ShieldCheck, Eye, Lock
+  Mic, MicOff, Video, VideoOff, Power
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
-import AdSlot from '../components/AdSlot';
 import ReportModal from '../components/ReportModal';
 
 const Chat = () => {
@@ -28,8 +26,8 @@ const Chat = () => {
   const [typing, setTyping] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [toast, setToast] = useState(null);
-  const [onlineCount, setOnlineCount] = useState(11435);
-  const [showAdminHint, setShowAdminHint] = useState(false);
+  const [onlineCount, setOnlineCount] = useState(11334);
+  const [partnerCountry, setPartnerCountry] = useState('Italy');
 
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -50,10 +48,10 @@ const Chat = () => {
       startPeerConnection(isInitiator, roomId);
     };
     const onPartnerLeft = () => {
-      setMessages(prev => [...prev, { system: true, text: "L'utente ha abbandonato la chat." }]);
+      setMessages(prev => [...prev, { system: true, text: "You have disconnected" }]);
       closePeerConnection();
       setRemoteStream(null);
-      setAppState('waiting');
+      setAppState('disconnected');
       setRoomId(null);
     };
     const onReceiveMessage = ({ sender, text, isMe, warning }) => {
@@ -64,12 +62,12 @@ const Chat = () => {
       setTimeout(() => setTyping(false), 1500);
     };
     const onMessageBlocked = ({ reason }) => {
-      setToast(reason === 'rate_limit' ? 'Troppi messaggi. Attendi.' : 'Messaggio bloccato dal filtro.');
+      setToast(reason === 'rate_limit' ? 'Too many messages. Wait.' : 'Message blocked by filter.');
       setTimeout(() => setToast(null), 3000);
     };
     const onTimeout = () => { closePeerConnection(); setAppState('timeout'); };
     const onBanned = () => { closePeerConnection(); setAppState('banned'); };
-    const onReportSent = () => { setToast('Segnalazione inviata.'); setTimeout(() => setToast(null), 3000); };
+    const onReportSent = () => { setToast('Report sent.'); setTimeout(() => setToast(null), 3000); };
     const onOnlineCount = (count) => setOnlineCount(count);
 
     const onOffer = async ({ offer }) => {
@@ -141,7 +139,7 @@ const Chat = () => {
       setLocalStream(stream);
       localStreamRef.current = stream;
     } catch (err) {
-      console.warn('Camera non disponibile:', err);
+      console.warn('Camera not available:', err);
       setCamDenied(true);
     }
   }
@@ -230,14 +228,6 @@ const Chat = () => {
     socket.emit('find_partner');
   }
 
-  function handleStop() {
-    closePeerConnection();
-    setMessages([]);
-    setRoomId(null);
-    cleanupAll();
-    setAppState('landing');
-  }
-
   function handleSend() {
     if (!input.trim() || !roomId || appState !== 'matched') return;
     socket.emit('send_message', { roomId, text: input.trim() });
@@ -254,45 +244,35 @@ const Chat = () => {
     if (roomId) socket.emit('report_user', { roomId, reason });
   }
 
-  const StatusDot = ({ color }) => <span className={`inline-block w-2 h-2 rounded-full animate-pulse ${color}`} />;
-
-  // === LANDING ===
+  // === LANDING (tema chiaro come umingle) ===
   if (appState === 'landing') {
     return (
-      <div className="h-screen flex flex-col bg-[#1a0b2e]">
-        {/* Header VIOLA */}
-        <header className="h-14 bg-[#6b21a8] flex items-center justify-between px-4 shrink-0 shadow-lg">
+      <div className="h-screen flex flex-col bg-white">
+        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
-            <MessageCircle size={24} className="text-white" />
-            <span className="font-bold text-xl text-white tracking-tight">RandomChat</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 rounded-full">
-              <Eye size={14} className="text-white" />
-              <span className="text-xs text-white font-bold">{onlineCount.toLocaleString()}+</span>
-              <span className="text-[10px] text-white/80">online</span>
+            <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
+              <MessageCircle size={18} className="text-white" />
             </div>
+            <span className="font-bold text-xl text-gray-800 tracking-tight">umingle</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-5 bg-gray-300 rounded-full relative">
+              <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 shadow"></div>
+            </div>
+            <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
+            <span className="text-xs text-gray-500">online</span>
           </div>
         </header>
-
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-full max-w-md bg-white/10 backdrop-blur border border-white/20 rounded-3xl p-8 text-center shadow-2xl">
-            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#a855f7] to-[#ec4899] flex items-center justify-center mx-auto mb-6 shadow-xl">
-              <Camera size={40} className="text-white" />
+        <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
+          <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-lg">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#a855f7] flex items-center justify-center mx-auto mb-6">
+              <MessageCircle size={36} className="text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Video Chat</h2>
-            <p className="text-white/70 text-sm mb-6">
-              Meet new people from around the world. Safe, moderated, anonymous.
-            </p>
-            <button
-              onClick={handleStart}
-              className="w-full py-4 bg-gradient-to-r from-[#7c3aed] to-[#a855f7] hover:from-[#6d28d9] hover:to-[#9333ea] text-white font-bold rounded-xl transition shadow-xl text-lg"
-            >
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Video Chat</h2>
+            <p className="text-gray-500 text-sm mb-6">Meet new people from around the world</p>
+            <button onClick={handleStart} className="w-full py-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-bold rounded-xl transition text-lg">
               Start Chatting
             </button>
-            <p className="text-xs text-white/50 mt-4">
-              By clicking, you agree to our terms. Respectful behavior required.
-            </p>
           </div>
         </div>
       </div>
@@ -302,203 +282,158 @@ const Chat = () => {
   // === WAITING ===
   if (appState === 'waiting') {
     return (
-      <div className="h-screen flex flex-col bg-[#1a0b2e]">
-        <header className="h-14 bg-[#6b21a8] flex items-center justify-between px-4 shrink-0">
+      <div className="h-screen flex flex-col bg-white">
+        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
-            <MessageCircle size={22} className="text-white" />
-            <span className="font-bold text-lg text-white">RandomChat</span>
+            <div className="w-8 h-8 rounded-lg bg-[#7c3aed] flex items-center justify-center">
+              <MessageCircle size={18} className="text-white" />
+            </div>
+            <span className="font-bold text-xl text-gray-800">umingle</span>
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-white/80">
-            <StatusDot color="bg-white" />
-            Looking for someone...
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-5 bg-[#7c3aed] rounded-full relative">
+              <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 right-0.5 shadow"></div>
+            </div>
+            <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
+            <span className="text-xs text-gray-500">online</span>
           </div>
         </header>
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-20 h-20 border-4 border-[#a855f7] border-t-transparent rounded-full animate-spin mb-6" />
-          <p className="text-white font-semibold text-xl mb-2">Looking for a partner...</p>
-          <p className="text-white/50 text-sm">This may take a few seconds</p>
-          <button onClick={() => { cleanupAll(); setAppState('landing'); }} className="mt-10 px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm transition">
-            Cancel
-          </button>
+        <div className="flex-1 flex flex-col items-center justify-center bg-gray-50">
+          <div className="w-16 h-16 border-4 border-[#7c3aed] border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-gray-600 font-medium">Looking for a partner...</p>
         </div>
       </div>
     );
   }
 
-  // === BANNED / TIMEOUT ===
-  if (appState === 'banned' || appState === 'timeout') {
-    return (
-      <div className="h-screen flex flex-col bg-[#1a0b2e]">
-        <header className="h-14 bg-[#6b21a8] flex items-center px-4 shrink-0">
-          <button onClick={() => navigate('/')} className="flex items-center gap-2 text-white hover:opacity-80 transition">
-            <MessageCircle size={20} className="text-white" />
-            <span className="font-bold text-sm">RandomChat</span>
-          </button>
-        </header>
-        <div className="flex-1 flex flex-col items-center justify-center p-6">
-          <div className="w-24 h-24 rounded-full bg-red-500/20 flex items-center justify-center mb-6">
-            <Power size={40} className="text-red-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-3">{appState === 'banned' ? 'Banned' : 'Timeout'}</h2>
-          <p className="text-white/60 text-center max-w-md text-sm mb-8">
-            {appState === 'banned'
-              ? 'You received too many reports or were banned by a moderator.'
-              : 'Suspicious behavior detected. Please wait before trying again.'}
-          </p>
-          <button onClick={() => { cleanupAll(); setAppState('landing'); }} className="px-10 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition text-sm font-medium">
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // === DISCONNECTED / MATCHED (come in foto) ===
+  const isConnected = appState === 'matched';
 
-  // === MATCHED — ESATTO come umingle ===
   return (
-    <div className="h-screen flex flex-col bg-[#0f0f1a] overflow-hidden">
-      {/* Header VIOLA */}
-      <header className="h-12 bg-[#7c3aed] flex items-center justify-between px-3 shrink-0 z-20 shadow-md">
+    <div className="h-screen flex flex-col bg-white">
+      {/* Header bianco */}
+      <header className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-3 shrink-0 z-20">
         <div className="flex items-center gap-2">
-          <MessageCircle size={20} className="text-white" />
-          <span className="font-bold text-base text-white">RandomChat</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <Eye size={14} className="text-white" />
-            <span className="text-sm text-white font-bold">{onlineCount.toLocaleString()}+</span>
-            <span className="text-[10px] text-white/80">online</span>
+          <div className="w-7 h-7 rounded-md bg-[#7c3aed] flex items-center justify-center">
+            <MessageCircle size={16} className="text-white" />
           </div>
-          <button onClick={() => setShowAdminHint(!showAdminHint)} className="p-1.5 text-white/70 hover:text-white transition">
-            <Lock size={14} />
-          </button>
+          <span className="font-bold text-lg text-gray-800">umingle</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`w-9 h-5 rounded-full relative transition ${isConnected ? 'bg-[#7c3aed]' : 'bg-gray-300'}`}>
+            <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 shadow transition ${isConnected ? 'right-0.5' : 'left-0.5'}`}></div>
+          </div>
+          <span className="text-sm text-[#7c3aed] font-bold">{onlineCount.toLocaleString()}+</span>
+          <span className="text-xs text-gray-500">online</span>
         </div>
       </header>
-      {showAdminHint && (
-        <div className="absolute top-12 right-2 bg-[#1a1a2e] border border-[#333] rounded-lg p-3 shadow-xl z-30 w-64">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck size={16} className="text-[#a855f7]" />
-            <span className="text-sm font-semibold text-white">Admin Access</span>
-          </div>
-          <p className="text-xs text-gray-400 mb-2">Go to <code className="text-[#a855f7]">/admin</code></p>
-          <button onClick={() => navigate('/admin')} className="w-full py-1.5 bg-[#7c3aed]/20 hover:bg-[#7c3aed]/30 text-[#a855f7] rounded text-xs font-medium transition mb-2">Open Admin</button>
-          <div className="text-[10px] text-gray-500 border-t border-[#333] pt-2">Password: <span className="text-gray-300 font-mono">admin123</span></div>
-        </div>
-      )}
 
-      {/* Main — video affiancati come umingle */}
+      {/* Main: video + chat */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Area video (sinistra, grande) */}
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Info bar */}
-          <div className="h-9 bg-[#1a1a2e] border-b border-[#2a2a3e] flex items-center px-3 shrink-0">
-            <span className="text-xs text-gray-400">You're now chatting with someone new</span>
-            <span className="text-xs text-gray-300 ml-2">You both like Italy 🇮🇹</span>
-          </div>
-
-          {/* Video grid ORIZZONTALE (come umingle) */}
-          <div className="flex-1 flex flex-col lg:flex-row gap-1 p-1 bg-[#0f0f1a] min-h-0">
-            {/* Remote video (sinistra o sopra) */}
-            <div className="flex-1 relative rounded-2xl overflow-hidden bg-[#1a1a2e] border border-[#2a2a3e]">
+        {/* Left: video area */}
+        <div className="flex-1 flex flex-col min-h-0 bg-gray-50">
+          {/* Video grid orizzontale */}
+          <div className="flex-1 flex gap-2 p-2 min-h-0">
+            {/* Partner video (left) */}
+            <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
               {remoteStream ? (
                 <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-[#2a2a3e] flex items-center justify-center mb-3">
-                    <Video size={28} className="text-gray-500" />
-                  </div>
-                  <p className="text-sm text-gray-500">Waiting for partner...</p>
+                <div className="w-full h-full flex items-center justify-center bg-[#d1d5db]">
+                  <Video size={32} className="text-gray-400" />
                 </div>
               )}
-              <div className="absolute bottom-3 right-3 text-[11px] text-white/40 font-medium">randomchat.com</div>
+              <div className="absolute bottom-2 left-2 text-xs text-white/60 font-medium">umingle.com</div>
+              <div className="absolute bottom-2 right-2 w-6 h-6 bg-white/20 rounded flex items-center justify-center text-[10px] text-white font-bold">P</div>
             </div>
 
-            {/* Local video (destra o sotto) */}
-            <div className="flex-1 relative rounded-2xl overflow-hidden bg-[#1a1a2e] border border-[#2a2a3e]">
+            {/* Local video (right) */}
+            <div className="flex-1 relative rounded-xl overflow-hidden bg-[#d1d5db]">
               {localStream && !camDenied ? (
                 <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                  <VideoOff size={28} className="text-gray-500 mb-2" />
-                  <span className="text-sm text-gray-500">{camDenied ? 'Camera off' : 'Your camera'}</span>
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#d1d5db]">
+                  <VideoOff size={28} className="text-gray-400 mb-1" />
+                  <span className="text-xs text-gray-500">Camera off</span>
                 </div>
               )}
-              <div className="absolute bottom-3 right-3 text-[11px] text-white/40 font-medium">randomchat.com</div>
             </div>
           </div>
 
-          {/* Controlli in basso — pulsanti GRANDI come umingle */}
-          <div className="h-16 bg-[#1a1a2e] border-t border-[#2a2a3e] flex items-center justify-center gap-3 px-4 shrink-0">
-            <button onClick={toggleMic} className={`p-3 rounded-full transition ${micOn ? 'bg-[#2a2a3e] text-white hover:bg-[#3a3a4e]' : 'bg-red-500/20 text-red-400'}`}>
-              {micOn ? <Mic size={20} /> : <MicOff size={20} />}
+          {/* Info text sotto video */}
+          <div className="px-3 py-2 bg-white border-t border-gray-100">
+            <p className="text-xs text-gray-600">You're now chatting with someone new</p>
+            <p className="text-xs text-gray-500">You both like Italia, ita, it</p>
+            <p className="text-xs text-gray-700 font-medium">🇮🇹 Italy</p>
+            {!isConnected && <p className="text-xs text-gray-500 mt-1">You have disconnected</p>}
+          </div>
+
+          {/* Controls */}
+          <div className="h-14 bg-white border-t border-gray-200 flex items-center gap-2 px-3 shrink-0">
+            <button onClick={toggleMic} className={`p-2 rounded-full transition ${micOn ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-red-100 text-red-500'}`}>
+              {micOn ? <Mic size={18} /> : <MicOff size={18} />}
             </button>
-            <button onClick={toggleCam} className={`p-3 rounded-full transition ${camOn ? 'bg-[#2a2a3e] text-white hover:bg-[#3a3a4e]' : 'bg-red-500/20 text-red-400'}`}>
-              {camOn ? <Video size={20} /> : <VideoOff size={20} />}
+            <button onClick={toggleCam} className={`p-2 rounded-full transition ${camOn ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-red-100 text-red-500'}`}>
+              {camOn ? <Video size={18} /> : <VideoOff size={18} />}
             </button>
-            <button onClick={() => setShowReport(true)} className="p-3 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">
-              <AlertTriangle size={20} />
+            <button onClick={() => setShowReport(true)} className="p-2 rounded-full bg-red-50 text-red-500 hover:bg-red-100 transition">
+              <AlertTriangle size={18} />
             </button>
-            <button onClick={handleNext} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-full font-bold text-sm transition shadow-lg">
-              <SkipForward size={18} />
-              Skip
-            </button>
-            <button onClick={handleStop} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-full font-bold text-sm transition shadow-lg">
-              <Power size={18} />
-              Stop
-            </button>
+            {isConnected ? (
+              <button onClick={handleNext} className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-semibold text-sm transition">
+                <SkipForward size={16} />
+                Skip
+              </button>
+            ) : (
+              <button onClick={handleStart} className="flex items-center gap-1.5 px-5 py-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white rounded-lg font-bold text-sm transition">
+                Start
+                <span className="text-[10px] font-normal opacity-70 ml-1">Esc</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Chat sidebar (destra) */}
-        <div className="w-full lg:w-80 flex flex-col bg-[#1a1a2e] border-t lg:border-t-0 lg:border-l border-[#2a2a3e] shrink-0 h-48 lg:h-auto">
-          <div className="h-10 border-b border-[#2a2a3e] flex items-center justify-between px-3 shrink-0">
-            <span className="text-xs font-medium text-gray-300">Chat</span>
-            <span className="text-[10px] text-gray-500">{messages.filter(m => !m.system).length}</span>
-          </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin min-h-0">
+        {/* Right: chat sidebar */}
+        <div className="w-full lg:w-64 flex flex-col bg-white border-t lg:border-t-0 lg:border-l border-gray-200 shrink-0 h-40 lg:h-auto">
+          <div className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin min-h-0">
             {messages.length === 0 && (
-              <div className="text-center text-gray-500 py-4">
-                <p className="text-xs">Say hi to your partner!</p>
-              </div>
+              <div className="text-center text-gray-400 py-4 text-xs">Say hi!</div>
             )}
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.system ? 'justify-center' : msg.isMe ? 'justify-end' : 'justify-start'}`}>
                 {msg.system ? (
-                  <span className="text-[10px] text-gray-500 bg-[#2a2a3e] px-3 py-1 rounded-full">{msg.text}</span>
+                  <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{msg.text}</span>
                 ) : (
-                  <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${msg.isMe ? 'bg-[#7c3aed] text-white rounded-br-md' : 'bg-[#2a2a3e] text-gray-200 rounded-bl-md'}`}>
+                  <div className={`max-w-[90%] px-2.5 py-1.5 rounded-lg text-xs ${msg.isMe ? 'bg-[#7c3aed] text-white' : 'bg-gray-100 text-gray-700'}`}>
                     {msg.text}
-                    {msg.warning && <p className="text-[9px] text-yellow-300 mt-1">⚠️ Warning</p>}
                   </div>
                 )}
               </div>
             ))}
             {typing && (
               <div className="flex justify-start">
-                <div className="bg-[#2a2a3e] px-3 py-2 rounded-2xl rounded-bl-md text-sm text-gray-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="bg-gray-100 px-2.5 py-1.5 rounded-lg text-xs text-gray-400 flex items-center gap-1">
+                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" />
+                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             )}
             <div ref={messagesEndRef} />
           </div>
-          <div className="p-2 border-t border-[#2a2a3e] shrink-0">
-            <div className="flex gap-2">
-              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type a message..." className="flex-1 bg-[#2a2a3e] border border-[#3a3a4e] rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-[#7c3aed] transition" />
-              <button onClick={handleSend} disabled={!input.trim()} className="p-2.5 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-xl transition">
-                <Send size={18} />
+          <div className="p-2 border-t border-gray-200 shrink-0">
+            <div className="flex gap-1.5">
+              <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} placeholder="Type..." className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:border-[#7c3aed] transition" />
+              <button onClick={handleSend} disabled={!input.trim()} className="p-2 bg-[#7c3aed] hover:bg-[#6d28d9] disabled:opacity-40 text-white rounded-lg transition">
+                <Send size={14} />
               </button>
             </div>
-          </div>
-          <div className="hidden lg:block p-2 border-t border-[#2a2a3e] shrink-0">
-            <AdSlot label="Ad" className="h-14" />
           </div>
         </div>
       </div>
 
       {toast && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1a1a2e] border border-[#2a2a3e] text-white px-4 py-2.5 rounded-lg shadow-lg text-xs z-50 max-w-xs text-center">
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-3 py-2 rounded-lg shadow-lg text-xs z-50">
           {toast}
         </div>
       )}
